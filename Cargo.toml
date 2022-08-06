@@ -1,6 +1,11 @@
 [package]
 name = "gold"
 version = "0.1.0"
+homepage = "https://github.com/minsk-dev/gold"
+repository = "https://github.com/minsk-dev/gold"
+license = "BSD-3-Clause"
+license-file = "LICENSE"
+readme = "README.md"
 edition = "2021"
 
 [dependencies]
