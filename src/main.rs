@@ -26,14 +26,18 @@ async fn main() -> io::Result<()> {
 		let db = db.clone();
 
 		buf.read_line(&mut request).await.unwrap();
-		print!("Got from user: {}", request);
-		let data = json::parse(&request).unwrap();
+		match json::parse(&request) {
+			Ok(data) => {
+				print!("Got from user: {}", request);
 
-		update_db(&db, data).await;
+				update_db(&db, data).await;
 
-		println!("Database Dump: {:#?}", db.lock().await);
-		buf.write_all(json::stringify(db.lock().await.clone())
-			.as_bytes()).await.unwrap();
+				println!("Database Dump: {:#?}", db.lock().await);
+				buf.write_all(json::stringify(db.lock().await.clone())
+					.as_bytes()).await.unwrap();
+			}
+			Err(_) => eprintln!("Invalid JSON provided.")
+		}
 	}
 }
 
@@ -53,6 +57,8 @@ async fn update_db(db: &Arc<Mutex<HashMap<String, String>>>, data: JsonValue) {
 				update_db(db, element).await;
 			}
 		}
-		_ => {}
+		_ => {
+			eprintln!("Invalid JSON provided. Only objects and arrays are accepted")
+		}
 	}
 }

@@ -2,7 +2,7 @@
 name = "gold-db"
 authors = ["Alex Andrade Albuquerque <pauloalbuquerque@acm.org>"]
 description = "Redis-like database made with Rust."
-version = "0.1.0-2"
+version = "0.1.1"
 homepage = "https://github.com/minsk-dev/gold"
 repository = "https://github.com/minsk-dev/gold"
 license-file = "LICENSE"
