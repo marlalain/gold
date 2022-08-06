@@ -2,16 +2,22 @@
 
 **This is a toy project.** `gold` is a database that runs in your memory.
 
-## Installation
+## Installation (stable)
+
+```sh
+cargo install gold-db
+```
+
+## Installation (git)
 
 ```sh
 git clone https://github.com/minsk-dev/gold
-cd gold
+cd gold-db
 cargo install --path .
 ```
 
 ## Running
 
 ```sh
-gold
+gold-db
 ```
