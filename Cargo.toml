@@ -1,5 +1,6 @@
 [package]
-name = "gold"
+name = "gold-db"
+authors = ["Alex Andrade Albuquerque <pauloalbuquerque@acm.org>"]
 description = "Redis-like database made with Rust."
 version = "0.1.0"
 homepage = "https://github.com/minsk-dev/gold"
