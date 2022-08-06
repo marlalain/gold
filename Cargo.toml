@@ -6,6 +6,9 @@ repository = "https://github.com/minsk-dev/gold"
 license = "BSD-3-Clause"
 license-file = "LICENSE"
 readme = "README.md"
+exclude = [
+    ".idea"
+]
 edition = "2021"
 
 [dependencies]
