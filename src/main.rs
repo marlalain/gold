@@ -11,7 +11,7 @@ use async_recursion::async_recursion;
 #[tokio::main]
 async fn main() -> io::Result<()> {
 	// For some reason, 'localhost' is not the same as '127.0.0.1'.
-	// Using 'localhost' gives UB (kinda?).
+	// Using 'localhost' doesn't work.
 	let server_addr = "127.0.0.1:5445";
 	match TcpListener::bind(server_addr).await {
 		Ok(listener) => start_server(listener, server_addr).await,
@@ -45,7 +45,7 @@ async fn start_server(listener: TcpListener, server_addr: &str) {
 				update_db(&db, data).await;
 
 				println!("Database Dump: {:#?}", db.lock().await);
-				buf.write_all(json::stringify(db.lock().await.clone())
+				buf.write_all(format!("{}\n", json::stringify(db.lock().await.clone()))
 					.as_bytes()).await.unwrap();
 			}
 			Err(_) => eprintln!("Invalid JSON provided.")
