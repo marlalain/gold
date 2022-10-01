@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::io::ErrorKind;
+use std::net::SocketAddr;
 use std::sync::{Arc};
 use json::JsonValue;
 use tokio::io;
@@ -31,7 +32,7 @@ async fn start_server(listener: TcpListener, server_addr: &str) {
 
 	loop {
 		let (stream, socket_addr) = listener.accept().await.unwrap();
-		println!("User connected: '{}'", socket_addr);
+		println!("[{}]: User connected", socket_addr);
 
 		let mut request = String::new();
 		let mut buf: BufReader<TcpStream> = BufReader::new(stream);
@@ -40,25 +41,25 @@ async fn start_server(listener: TcpListener, server_addr: &str) {
 		buf.read_line(&mut request).await.unwrap();
 		match json::parse(&request) {
 			Ok(data) => {
-				print!("Got from user: {}", request);
+				print!("[{}]: Got from user: {}", socket_addr, request);
 
-				update_db(&db, data).await;
+				update_db(&db, data, socket_addr).await;
 
-				println!("Database Dump: {:#?}", db.lock().await);
+				println!("[{}]: Database Dump: {:?}", socket_addr, db.lock().await);
 				buf.write_all(format!("{}\n", json::stringify(db.lock().await.clone()))
 					.as_bytes()).await.unwrap();
 			}
-			Err(_) => eprintln!("Invalid JSON provided.")
+			Err(_) => eprintln!("[{}]: Invalid JSON provided.", socket_addr)
 		}
 	}
 }
 
 #[async_recursion]
-async fn update_db(db: &Arc<Mutex<HashMap<String, String>>>, data: JsonValue) {
+async fn update_db(db: &Arc<Mutex<HashMap<String, String>>>, data: JsonValue, socket_addr: SocketAddr) {
 	match data {
 		JsonValue::Object(data) => {
 			for (key, value) in data.iter() {
-				println!("Adding {}:{} to database...", key, value);
+				println!("[{}]: Adding {}:{} to database...", socket_addr, key, value);
 				let mut db = db.lock().await;
 				db.insert(key.parse().unwrap(), value.to_string());
 				drop(db);
@@ -66,9 +67,9 @@ async fn update_db(db: &Arc<Mutex<HashMap<String, String>>>, data: JsonValue) {
 		}
 		JsonValue::Array(arr) => {
 			for element in arr {
-				update_db(db, element).await;
+				update_db(db, element, socket_addr).await;
 			}
 		}
-		_ => eprintln!("Invalid JSON provided. Only objects and arrays are accepted."),
+		_ => eprintln!("[{}]: Invalid JSON provided. Only objects and arrays are accepted.", socket_addr),
 	}
 }
