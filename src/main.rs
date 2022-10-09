@@ -83,7 +83,7 @@ async fn start_server(listener: TcpListener, server_addr: &str) -> Result<()> {
 
 		match method {
 			HttpMethods::GET => {
-				match query_db(&db, key, socket_addr).await {
+				match query_db(&db, key).await {
 					None => {
 						eprintln!("[{}]: Invalid JSON", socket_addr);
 						buf.write_all(b"HTTP/1.1 404 Not Found").await?;
@@ -102,7 +102,7 @@ async fn start_server(listener: TcpListener, server_addr: &str) -> Result<()> {
 
 				if let Ok(body) = json::parse(&*raw_body) {
 					update_db(&db, body.clone(), key, socket_addr).await;
-					println!("[{}]: {}", socket_addr, body);
+					println!("[{}]: {:?}", socket_addr, body);
 					buf.write_all(b"HTTP/1.1 202 Accepted").await?;
 				} else {
 					eprintln!("[{}]: Invalid JSON", socket_addr);
@@ -138,6 +138,6 @@ async fn update_db(db: &Arc<Mutex<HashMap<String, Object>>>, data: JsonValue, ke
 	}
 }
 
-async fn query_db(db: &Arc<Mutex<HashMap<String, Object>>>, key: String, socket_addr: SocketAddr) -> Option<Object> {
+async fn query_db(db: &Arc<Mutex<HashMap<String, Object>>>, key: String) -> Option<Object> {
 	db.lock().await.get(&key).cloned()
 }
