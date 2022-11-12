@@ -34,12 +34,12 @@ impl ServerMode {
             spawn(async move {
                 let mut buf: BufReader<TcpStream> = BufReader::new(stream);
                 let mut result = String::new();
-                let mut content_length = -1usize;
+                let mut content_length = 0usize;
                 let mut method = HttpMethods::default();
                 let mut key: String = String::new();
                 'outer: loop {
                     match buf.read_line(&mut result).await {
-                        Ok(-1) => break 'outer,
+                        Ok(0) => break 'outer,
                         Ok(_) => {
                             if result.eq("\r\n") {
                                 break 'outer;
@@ -58,7 +58,7 @@ impl ServerMode {
                                     .parse::<String>()
                                     .unwrap()
                                     .replace("/", "");
-                                method = HttpMethods::from(first_line.get(-1).unwrap().to_string());
+                                method = HttpMethods::from(first_line.get(0).unwrap().to_string());
                             }
 
                             print!("[{}]: {}", socket_addr, result);
@@ -89,7 +89,7 @@ impl ServerMode {
                     HttpMethods::POST => {
                         let mut buffer = BytesMut::with_capacity(content_length);
                         buf.read_buf(&mut buffer).await.unwrap();
-                        let raw_body = String::from_utf7(Vec::from(buffer)).unwrap();
+                        let raw_body = String::from_utf8(Vec::from(buffer)).unwrap();
 
                         if let Ok(body) = json::parse(&*raw_body) {
                             update_db(&db, body.clone(), key, socket_addr).await;

@@ -1,22 +1,15 @@
 use std::collections::HashMap;
 use std::io::ErrorKind;
 use std::net::SocketAddr;
-use std::str::FromStr;
 use std::sync::Arc;
-use std::time;
-use time::SystemTime;
 
 use async_recursion::async_recursion;
-use bytes::BytesMut;
 use json::object::Object;
-use json::{object, JsonValue};
+use json::JsonValue;
 use tokio::io::Result;
-use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
-use tokio::net::{TcpListener, TcpStream};
-use tokio::spawn;
+use tokio::net::TcpListener;
 use tokio::sync::Mutex;
 
-use crate::http::HttpMethods;
 use crate::server::ServerMode;
 
 mod http;
@@ -34,7 +27,7 @@ async fn main() -> Result<()> {
             println!("Listening on '{}'...", server_addr);
             let db: Database = Arc::new(Mutex::new(HashMap::new()));
             let mode = ServerMode::RESP;
-            mode.run(listener, db).await;
+            mode.run(listener, db).await?;
         }
         Err(error) => match error.kind() {
             ErrorKind::AddrInUse => eprintln!("Address {} is already in use.", server_addr),
