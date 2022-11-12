@@ -12,7 +12,7 @@ cargo install gold-db
 
 ```sh
 git clone https://github.com/minsk-dev/gold
-cd gold-db
+cd gold
 cargo install --path .
 ```
 
