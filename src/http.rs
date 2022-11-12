@@ -1,7 +1,8 @@
 use std::borrow::Borrow;
 
+#[derive(Default)]
 pub enum HttpMethods {
-	NOTHING,
+	#[default]
 	POST,
 	GET,
 	DELETE,
@@ -9,7 +10,7 @@ pub enum HttpMethods {
 
 impl HttpMethods {
 	pub fn from(string: String) -> HttpMethods {
-		return match string.as_str() {
+		return match string.as_ref() {
 			"POST" => HttpMethods::POST,
 			"GET" => HttpMethods::GET,
 			"DELETE" => HttpMethods::DELETE,

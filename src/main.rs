@@ -50,7 +50,7 @@ async fn start_server(listener: TcpListener, server_addr: &str) -> Result<()> {
 		let db = db.clone();
 		let mut result = String::new();
 		let mut content_length = 0usize;
-		let mut method = HttpMethods::NOTHING;
+		let mut method = HttpMethods::default();
 		let mut key: String = String::new();
 		'outer: loop {
 			match buf.read_line(&mut result).await {
