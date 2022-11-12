@@ -119,31 +119,42 @@ impl ServerMode {
 
     async fn start_resp_server(listener: TcpListener, db: Database) -> Result<()> {
         loop {
-            let (stream, _socket_addr) = listener.accept().await.unwrap();
-            let _db = db.clone();
+            let (stream, socket_addr) = listener.accept().await.unwrap();
+            let db = db.clone();
 
-            // spawn
-            let mut buf = BufReader::new(stream);
-            let mut request = String::new();
+            spawn(async move {
+                let mut buf = BufReader::new(stream);
+                let mut request = String::new();
 
-            loop {
-                match buf.read_line(&mut request).await {
-                    Ok(0) => {}
-                    Ok(_) => {
-                        for raw_line in request.clone().split("\r\n") {
-                            let line = raw_line.replace("\r\n", "");
-                            if line == "" {
-                                continue;
+                loop {
+                    match buf.read_line(&mut request).await {
+                        Ok(0) => break,
+                        Ok(_) => {
+                            for raw_line in request.clone().split("\r\n") {
+                                let line = raw_line.replace("\r\n", "");
+                                if line == "" {
+                                    continue;
+                                }
+
+                                let now = SystemTime::now();
+                                let command = RespCommand::by_str(&line);
+
+                                buf.write(&*command.process(&db, line).await).await.unwrap();
+                                (&mut request).clear();
+
+                                if let Ok(elapsed) = now.elapsed() {
+                                    println!(
+                                        "[{}]: finished in {}μs",
+                                        socket_addr,
+                                        elapsed.as_micros()
+                                    );
+                                }
                             }
-
-                            let command = RespCommand::by_str(&line);
-                            buf.write(&*command.process(&db, line).await).await.unwrap();
-                            (&mut request).clear();
                         }
+                        Err(err) => eprintln!("{:?}", err),
                     }
-                    Err(err) => eprintln!("{:?}", err),
                 }
-            }
+            });
         }
     }
 }
