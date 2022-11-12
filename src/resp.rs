@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-
 use crate::{query_db, update_db, Database};
 
 pub enum RespCommand {
@@ -18,13 +16,6 @@ impl RespCommand {
             "SET" => Self::SET,
             "EXISTS" => Self::EXISTS,
             _ => panic!("not a valid resp command"),
-        }
-    }
-
-    pub fn non_db(&self) -> bool {
-        match self {
-            RespCommand::PING => true,
-            _ => false,
         }
     }
 
