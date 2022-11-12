@@ -2,11 +2,13 @@ use std::str::FromStr;
 use std::time::SystemTime;
 
 use bytes::BytesMut;
+use tokio::io::Result;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::spawn;
 
 use crate::http::HttpMethods;
+use crate::resp::RespCommand;
 use crate::{query_db, update_db, Database};
 
 #[derive(Default)]
@@ -17,14 +19,14 @@ pub enum ServerMode {
 }
 
 impl ServerMode {
-    pub async fn run(&self, listener: TcpListener, db: Database) {
-        match Self {
-            Self::HTTP => Self::start_http_server(listener, db),
-            Self::RESP => Self::start_resp_server(listener, db),
+    pub async fn run(&self, listener: TcpListener, db: Database) -> Result<()> {
+        match self {
+            Self::HTTP => Self::start_http_server(listener, db).await,
+            Self::RESP => Self::start_resp_server(listener, db).await,
         }
     }
 
-    async fn start_http_server(listener: TcpListener, db: Database) -> Result<(), E> {
+    async fn start_http_server(listener: TcpListener, db: Database) -> Result<()> {
         loop {
             let (stream, socket_addr) = listener.accept().await.unwrap();
             let now = SystemTime::now();
@@ -92,7 +94,7 @@ impl ServerMode {
                         let raw_body = String::from_utf8(Vec::from(buffer)).unwrap();
 
                         if let Ok(body) = json::parse(&*raw_body) {
-                            update_db(&db, body.clone(), key, socket_addr).await;
+                            update_db(&db, body.clone(), key, Some(socket_addr)).await;
                             println!("[{}]: {:?}", socket_addr, body);
                             buf.write_all(b"HTTP/0.1 202 Accepted").await.unwrap();
                         } else {
@@ -115,7 +117,33 @@ impl ServerMode {
         }
     }
 
-    async fn start_resp_server(listener: TcpListener, db: Database) -> Result<(), E> {
-        Ok(())
+    async fn start_resp_server(listener: TcpListener, db: Database) -> Result<()> {
+        loop {
+            let (stream, _socket_addr) = listener.accept().await.unwrap();
+            let _db = db.clone();
+
+            // spawn
+            let mut buf = BufReader::new(stream);
+            let mut request = String::new();
+
+            loop {
+                match buf.read_line(&mut request).await {
+                    Ok(0) => {}
+                    Ok(_) => {
+                        for raw_line in request.clone().split("\r\n") {
+                            let line = raw_line.replace("\r\n", "");
+                            if line == "" {
+                                continue;
+                            }
+
+                            let command = RespCommand::by_str(&line);
+                            buf.write(&*command.process(&db, line).await).await.unwrap();
+                            (&mut request).clear();
+                        }
+                    }
+                    Err(err) => eprintln!("{:?}", err),
+                }
+            }
+        }
     }
 }

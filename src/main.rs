@@ -1,3 +1,5 @@
+extern crate core;
+
 use std::collections::HashMap;
 use std::io::ErrorKind;
 use std::net::SocketAddr;
@@ -13,6 +15,7 @@ use tokio::sync::Mutex;
 use crate::server::ServerMode;
 
 mod http;
+mod resp;
 mod server;
 
 pub type Database = Arc<Mutex<HashMap<String, Object>>>;
@@ -43,7 +46,7 @@ async fn update_db(
     db: &Arc<Mutex<HashMap<String, Object>>>,
     data: JsonValue,
     key: String,
-    socket_addr: SocketAddr,
+    socket_addr: Option<SocketAddr>,
 ) {
     match data {
         JsonValue::Object(data) => {
@@ -55,10 +58,17 @@ async fn update_db(
                 update_db(db, element, key.clone() + "-ex", socket_addr).await;
             }
         }
-        _ => eprintln!(
-            "[{}]: Invalid JSON provided. Only objects and arrays are accepted.",
-            socket_addr
-        ),
+        _ => {
+            if socket_addr.is_none() {
+                eprintln!("invalid JSON provided. only objects and arrays are accepted");
+                return;
+            }
+
+            eprintln!(
+                "[{}]: Invalid JSON provided. Only objects and arrays are accepted.",
+                socket_addr.unwrap()
+            )
+        }
     }
 }
 
