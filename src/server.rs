@@ -10,14 +10,14 @@ use crate::http::HttpMethods;
 use crate::{query_db, update_db, Database};
 
 #[derive(Default)]
-enum ServerMode {
+pub enum ServerMode {
     #[default]
     HTTP,
     RESP,
 }
 
 impl ServerMode {
-    async fn run(listener: TcpListener, db: Database) {
+    pub async fn run(&self, listener: TcpListener, db: Database) {
         match Self {
             Self::HTTP => Self::start_http_server(listener, db),
             Self::RESP => Self::start_resp_server(listener, db),

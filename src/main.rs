@@ -17,6 +17,7 @@ use tokio::spawn;
 use tokio::sync::Mutex;
 
 use crate::http::HttpMethods;
+use crate::server::ServerMode;
 
 mod http;
 mod server;
@@ -33,7 +34,7 @@ async fn main() -> Result<()> {
             println!("Listening on '{}'...", server_addr);
             let db: Database = Arc::new(Mutex::new(HashMap::new()));
             let mode = ServerMode::RESP;
-            start_http_server(listener, db).await?;
+            mode.run(listener, db).await;
         }
         Err(error) => match error.kind() {
             ErrorKind::AddrInUse => eprintln!("Address {} is already in use.", server_addr),
