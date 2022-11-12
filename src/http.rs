@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-
 #[derive(Default)]
 pub enum HttpMethods {
 	#[default]
