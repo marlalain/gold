@@ -1,6 +1,8 @@
 # `gold`
 
-**This is a toy project.** `gold` is a database that runs in your memory.
+**This is a toy project.**
+
+`gold` is a in-memory key-value database that communicates using the `RESP` and `HTTP` protocols.
 
 ## Installation (stable)
 
