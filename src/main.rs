@@ -58,11 +58,6 @@ async fn update_db(db: &Database, data: JsonValue, key: String, socket_addr: Opt
             let mut db = db.lock().await;
             db.insert(key, data);
         }
-        JsonValue::Array(arr) => {
-            for element in arr {
-                update_db(db, element, key.clone() + "-ex", socket_addr).await;
-            }
-        }
         _ => {
             if socket_addr.is_none() {
                 eprintln!("invalid JSON provided. only objects and arrays are accepted");
