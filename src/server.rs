@@ -51,18 +51,18 @@ impl ServerMode {
 
                             if result.starts_with("Content-Length") {
                                 content_length = usize::from_str(
-                                    &*result.replace("Content-Length: ", "").replace("\r\n", ""),
+                                    &result.replace("Content-Length: ", "").replace("\r\n", ""),
                                 )
                                 .unwrap();
                             } else if result.contains("HTTP/") {
                                 let first_line = result.split_whitespace().collect::<Vec<&str>>();
                                 key = first_line
-                                    .get(0)
+                                    .get(1)
                                     .unwrap()
                                     .parse::<String>()
                                     .unwrap()
-                                    .replace("/", "");
-                                method = HttpMethods::from(first_line.get(0).unwrap().to_string());
+                                    .replace('/', "");
+                                method = HttpMethods::from(first_line.first().unwrap().to_string());
                             }
 
                             print!("[{}]: {}", socket_addr, result);
@@ -70,7 +70,7 @@ impl ServerMode {
                         }
                         Err(e) => {
                             eprintln!("{}", e);
-                            buf.write_all(b"HTTP/0.1 500 Internal Server Error")
+                            buf.write_all(b"HTTP/1.1 500 Internal Server Error")
                                 .await
                                 .unwrap();
                             break 'outer;
@@ -81,12 +81,12 @@ impl ServerMode {
                 match method {
                     HttpMethods::GET => match query_db(&db, key).await {
                         None => {
-                            eprintln!("[{}]: Invalid JSON", socket_addr);
-                            buf.write_all(b"HTTP/0.1 404 Not Found").await.unwrap();
+                            eprintln!("[{}]: invalid key", socket_addr);
+                            buf.write_all(b"HTTP/1.1 404 Not Found").await.unwrap();
                         }
                         Some(entry) => {
                             let body = json::stringify(entry.clone());
-                            let response = format!("HTTP/0.1 200 OK\r\n\r\n{}", body);
+                            let response = format!("HTTP/1.1 200 OK\r\n\r\n{}", body);
                             buf.write_all(response.as_bytes()).await.unwrap();
                         }
                     },
@@ -95,25 +95,26 @@ impl ServerMode {
                         buf.read_buf(&mut buffer).await.unwrap();
                         let raw_body = String::from_utf8(Vec::from(buffer)).unwrap();
 
-                        if let Ok(body) = json::parse(&*raw_body) {
+                        if let Ok(body) = json::parse(&raw_body) {
                             update_db(&db, body.clone(), key, Some(socket_addr)).await;
                             println!("[{}]: {:?}", socket_addr, body);
-                            buf.write_all(b"HTTP/0.1 202 Accepted").await.unwrap();
+                            buf.write_all(b"HTTP/1.1 202 Accepted").await.unwrap();
                         } else {
                             eprintln!("[{}]: Invalid JSON", socket_addr);
-                            buf.write_all(b"HTTP/0.1 400 Bad Request").await.unwrap();
+                            buf.write_all(b"HTTP/1.1 400 Bad Request").await.unwrap();
                         }
                     }
                     HttpMethods::DELETE => {
                         let mut _db = db.lock().await;
                         _db.remove(&*key);
                         println!("[{}]: Deleting resource", socket_addr);
-                        buf.write_all(b"HTTP/0.1 202 Accepted").await.unwrap();
+                        buf.write_all(b"HTTP/1.1 202 Accepted").await.unwrap();
                     }
+                    _ => {}
                 }
 
                 if let Ok(elapsed) = now.elapsed() {
-                    println!("[{}]: Finished in {}μs", socket_addr, elapsed.as_micros());
+                    println!("[{}]: finished in {}μs", socket_addr, elapsed.as_micros());
                 }
             });
         }
@@ -136,15 +137,18 @@ impl ServerMode {
                         Ok(_) => {
                             for raw_line in request.clone().split("\r\n") {
                                 let line = raw_line.replace("\r\n", "");
-                                if line == "" {
+                                if line.is_empty() {
                                     continue;
                                 }
 
                                 let now = SystemTime::now();
                                 let command = RespCommand::by_str(&line);
 
-                                buf.write(&*command.process(&db, line).await).await.unwrap();
-                                (&mut request).clear();
+                                if let Err(err) = buf.write(&command.process(&db, line).await).await
+                                {
+                                    eprintln!("not able to write to client. {}", err)
+                                }
+                                request.clear();
 
                                 if let Ok(elapsed) = now.elapsed() {
                                     println!(

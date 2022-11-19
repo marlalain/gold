@@ -52,12 +52,7 @@ async fn main() -> Result<()> {
 }
 
 #[async_recursion]
-async fn update_db(
-    db: &Arc<Mutex<HashMap<String, Object>>>,
-    data: JsonValue,
-    key: String,
-    socket_addr: Option<SocketAddr>,
-) {
+async fn update_db(db: &Database, data: JsonValue, key: String, socket_addr: Option<SocketAddr>) {
     match data {
         JsonValue::Object(data) => {
             let mut db = db.lock().await;
@@ -75,13 +70,13 @@ async fn update_db(
             }
 
             eprintln!(
-                "[{}]: Invalid JSON provided. Only objects and arrays are accepted.",
+                "[{}]: invalid JSON provided. only objects and arrays are accepted",
                 socket_addr.unwrap()
             )
         }
     }
 }
 
-async fn query_db(db: &Arc<Mutex<HashMap<String, Object>>>, key: String) -> Option<Object> {
+async fn query_db(db: &Database, key: String) -> Option<Object> {
     db.lock().await.get(&key).cloned()
 }
