@@ -2,7 +2,7 @@
 
 **This is a toy project.**
 
-`gold` is a in-memory key-value database that communicates using the `RESP` and `HTTP` protocols.
+`gold` is an in-memory key-value database that communicates using the `RESP` and `HTTP` protocols.
 
 ## Installation (stable)
 
