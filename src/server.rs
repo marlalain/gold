@@ -97,7 +97,6 @@ impl ServerMode {
 
                         if let Ok(body) = json::parse(&raw_body) {
                             update_db(&db, body.clone(), key, Some(socket_addr)).await;
-                            println!("[{}]: {:?}", socket_addr, body);
                             buf.write_all(b"HTTP/1.1 202 Accepted").await.unwrap();
                         } else {
                             eprintln!("[{}]: Invalid JSON", socket_addr);
