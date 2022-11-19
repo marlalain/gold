@@ -27,6 +27,8 @@ impl ServerMode {
     }
 
     async fn start_http_server(listener: TcpListener, db: Database) -> Result<()> {
+        println!("gold created as an HTTP server...");
+
         loop {
             let (stream, socket_addr) = listener.accept().await.unwrap();
             let now = SystemTime::now();
@@ -118,6 +120,8 @@ impl ServerMode {
     }
 
     async fn start_resp_server(listener: TcpListener, db: Database) -> Result<()> {
+        println!("gold is accepting RESP calls...");
+
         loop {
             let (stream, socket_addr) = listener.accept().await.unwrap();
             let db = db.clone();

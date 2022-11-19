@@ -1,6 +1,7 @@
 extern crate core;
 
 use std::collections::HashMap;
+use std::env;
 use std::io::ErrorKind;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -27,13 +28,22 @@ async fn main() -> Result<()> {
     let server_addr = "0.0.0.0:5445";
     match TcpListener::bind(server_addr).await {
         Ok(listener) => {
-            println!("Listening on '{}'...", server_addr);
+            println!("listening on '{}'...", server_addr);
             let db: Database = Arc::new(Mutex::new(HashMap::new()));
-            let mode = ServerMode::RESP;
+
+            // TODO: Use a CLI framework
+            let mode = match env::args().nth(1) {
+                Some(arg) => match arg.as_str() {
+                    "--resp" => ServerMode::RESP,
+                    _ => ServerMode::HTTP,
+                },
+                None => ServerMode::HTTP,
+            };
+
             mode.run(listener, db).await?;
         }
         Err(error) => match error.kind() {
-            ErrorKind::AddrInUse => eprintln!("Address {} is already in use.", server_addr),
+            ErrorKind::AddrInUse => eprintln!("address {} is already in use.", server_addr),
             _ => eprintln!("{:?}", error.to_string()),
         },
     }
